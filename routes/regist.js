@@ -1,6 +1,7 @@
 const { log } = require('debug/src/browser')
 const express = require('express');
 const router = express.Router();
+const { nanoid } = require('nanoid')
 
 const mysql = require('mysql');
 const dbConfig = require('../db/db_config');
@@ -26,7 +27,6 @@ const defaultAvatar = 'https://s2.loli.net/2024/08/16/ayXlt4z9pTq5xCI.png'
 router.post('/', function(req, res, next) {
   // 获取前台页面传过来的参数
   const body = req.body;
-  console.log("🚀 ~ pool.getConnection ~ body:", body)
   if(!body.account) {
     return responseJSON(res, {
       code: -1,
@@ -39,14 +39,14 @@ router.post('/', function(req, res, next) {
       message: '请输入密码'
     })
   }
-  const nickname = body.nickname || '新用户'
+  
 
   // 从连接池获取连接
   pool.getConnection(function(error, connection) {
     if (error) throw error;
     connection.query(userSql.getUserByAccount, [body.account], function(err, result) {
-      console.log("🚀 ~ connection.query ~ result:", result)
       if(err) {
+        connection.release();
         return responseJSON(res, {
           code: -1,
           message: '注册失败',
@@ -54,16 +54,20 @@ router.post('/', function(req, res, next) {
         })
       } else {
         if(result && result.length) {
+          connection.release();
           return responseJSON(res, {
             code: -1,
             message: '账号已注册',
           })
         } 
+        const nickname = body.nickname || '新用户'
+        const inviteCode = nanoid(10); // 邀请码
         // 建立连接 增加一个用户信息
         connection.query(
           userSql.insert, 
-          [body.account, nickname, defaultAvatar, body.password],
+          [body.account, nickname, defaultAvatar, body.password, inviteCode],
           function(err_, result_) {
+            if (err_) throw err_;
             if(result_) {
               console.log("🚀 ~ connection.query ~ result_:", result_)
               result_ = {
@@ -80,7 +84,6 @@ router.post('/', function(req, res, next) {
 
             // 释放连接
             connection.release();
-            if (err_) throw err_;
           }
         )
       }
