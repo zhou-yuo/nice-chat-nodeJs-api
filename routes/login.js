@@ -46,7 +46,6 @@ router.post('/', function(req, res, next) {
       userSql.getUserByAccount,
       [body.account],
       function(err, result) {
-        if(err) throw err
         if(result && result.length) {
           if(result[0].password === body.password) {
             const userInfo = {
@@ -66,7 +65,7 @@ router.post('/', function(req, res, next) {
                 expiresIn: 3600 * 24 * 3
               }
             );
-            return responseJSON(res, {
+            responseJSON(res, {
               code: 0,
               message: 'success',
               data: {
@@ -75,17 +74,20 @@ router.post('/', function(req, res, next) {
               }
             })
           } else {
-            return responseJSON(res, {
+            responseJSON(res, {
               code: -1,
               message: '账号密码错误',
             })
           }
         } else {
-          return responseJSON(res, {
+          responseJSON(res, {
             code: -1,
             message: '账号不存在'
           })
         }
+        connection.release()
+
+        if(err) throw err
       }
     )
   })

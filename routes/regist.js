@@ -67,7 +67,6 @@ router.post('/', function(req, res, next) {
           userSql.insert, 
           [body.account, nickname, defaultAvatar, body.password, inviteCode],
           function(err_, result_) {
-            if (err_) throw err_;
             if(result_) {
               console.log("🚀 ~ connection.query ~ result_:", result_)
               result_ = {
@@ -84,6 +83,8 @@ router.post('/', function(req, res, next) {
 
             // 释放连接
             connection.release();
+
+            if (err_) throw err_;
           }
         )
       }
