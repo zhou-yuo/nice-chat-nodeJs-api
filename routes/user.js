@@ -29,7 +29,6 @@ router.get('/:id', function(req, res, next) {
       userSql.getUserById,
       [params.id],
       (err, result) => {
-        if(err) throw err;
         if(result && result.length) {
           console.log("🚀 ~ pool.getConnection ~ result:", result)
           const userInfo = {
@@ -50,6 +49,7 @@ router.get('/:id', function(req, res, next) {
           })
         }
         connection.release()
+        if(err) throw err;
       }
     )
   })
