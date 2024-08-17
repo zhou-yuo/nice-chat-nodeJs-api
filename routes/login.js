@@ -11,33 +11,23 @@ const userSql = require('../db/user_sql');
 // 使用DBConfig.js的配置信息创建一个MySQL连接池
 const pool = mysql.createPool(dbConfig.mysql);
 
-// 响应一个JSON数据
-const responseJSON = function (res, ret) {
-  if(typeof ret === 'undefined') {
-    res.json({
-      code: -1,
-      message: '操作失败'
-    });
-  } else {
-    res.json(ret);
-  }
-};
+// 响应一个 error
+const responseError = (res, message) => {
+  res.json({
+    code: -1,
+    message
+  })
+}
 
 /* login */
 router.post('/', function(req, res, next) {
   // 获取前台页面传过来的参数
   const body = req.body;
   if(!body.account) {
-    return responseJSON(res, {
-      code: -1,
-      message: '请输入账号'
-    })
+    return responseError(res, '账号不能为空') 
   }
   if(!body.password) {
-    return responseJSON(res, {
-      code: -1,
-      message: '请输入密码'
-    })
+    return responseError(res, '密码不能为空') 
   }
 
   pool.getConnection(function(error, connection) {
@@ -65,7 +55,7 @@ router.post('/', function(req, res, next) {
                 expiresIn: 3600 * 24 * 3
               }
             );
-            responseJSON(res, {
+            res.json({
               code: 0,
               message: 'success',
               data: {
@@ -74,16 +64,10 @@ router.post('/', function(req, res, next) {
               }
             })
           } else {
-            responseJSON(res, {
-              code: -1,
-              message: '账号密码错误',
-            })
+            responseError(res, '账号或密码错误') 
           }
         } else {
-          responseJSON(res, {
-            code: -1,
-            message: '账号不存在'
-          })
+          responseError(res, '账号不存在') 
         }
         connection.release()
 

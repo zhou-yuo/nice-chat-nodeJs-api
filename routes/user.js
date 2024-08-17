@@ -1,5 +1,5 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 
 const mysql = require('mysql');
 const dbConfig = require('../db/db_config');
@@ -7,58 +7,15 @@ const userSql = require('../db/user_sql');
 
 const pool = mysql.createPool(dbConfig.mysql);
 
-// 响应一个JSON数据
-const responseJSON = function (res, ret) {
-  if(typeof ret === 'undefined') {
-    res.json({
-      code: -1,
-      message: '操作失败'
-    });
-  } else {
-    res.json(ret);
-  }
-};
+const { GetUserInfoTypes, getUserInfo, hasUserAccount }  = require('./common_query/user')
 
-const GetUserInfoTypes = {
-  ID: "ID",
-  ACCOUNT: "ACCOUNT"
-}
-const getUserInfo = (val, type = '') => {
-  if(!val || !type) {
-    return Promise.reject({ message: `val 和 type 不能为空` })
-  };
-  return new Promise((resolve, reject) => {
-    pool.getConnection((error, connection) => {
-      if(error) {
-        reject(error)
-        throw error
-      };
-      let sql = '';
-      switch(type) {
-        case GetUserInfoTypes.ID:
-          sql = userSql.getUserById;
-          break;
-        case GetUserInfoTypes.ACCOUNT:
-          sql = userSql.getUserByAccount;
-          break;
-      }
-      connection.query(
-        sql,
-        [val],
-        (err, result) => {
-          if(result && result.length) {
-            resolve(result[0])
-          } else {
-            reject('无此用户')
-          }
-          connection.release()
-          if(err) throw err;
-        }
-      )
-    })
+// 响应一个 error
+const responseError = (res, message) => {
+  res.json({
+    code: -1,
+    message
   })
 }
-
 
 /* GET user */
 router.get('/:id', async (req, res, next) => {
@@ -69,53 +26,74 @@ router.get('/:id', async (req, res, next) => {
       ...result
     }
     delete userInfo.password;
-    responseJSON(res, {
+    res.json({
       code: 0,
       msg: 'success',
       data: userInfo
     })
   }
   catch(err) {
-    responseJSON(res, {
-      code: -1,
-      message: err
-    })
+    responseError(res, err || '错误')
   }
-  
 });
 
+/**
+ * 添加好友
+ * @param {*} userId 
+ * @param {*} targetUserId 
+ * @returns 
+ */
+const addFriend = (userId, targetUserId) => {
+  if(!userId || !targetUserId) {
+    return Promise.reject(`userId 或 targetUserId 不能为空`)
+  };
+  return new Promise((resolve, reject) => {
+    pool.getConnection((error, connection) => {
+      if(error) {
+        connection.release()
+        reject(error)
+        throw error
+      };
+      
+      connection.query(
+        userSql.hasUserByAccount,
+        [account],
+        (err, result) => {
+          resolve(!!(result && result.length))
+          connection.release()
+          if(err) throw err;
+        }
+      )
+    })
+  })
+}
 
 /**
  * user add friend by account
  */
-router.post('/add/:account', async (req, res, next) => {
-  const params = req.params;
-  console.log("🚀 ~ router.post ~ params:", params)
-  pool.getConnection((error, connection) => {
-    if(error) throw error;
-    connection.query(
-      userSql.getUserByAccount,
-      [params.account],
-      (err, result) => {
-        if(result) {
-          console.log("🚀 ~ pool.getConnection ~ result:", result)
-          responseJSON(res, {
-            code: 0,
-            msg: 'success'
-          })
-        } else {
-          responseJSON(res, {
-            code: -1,
-            msg: '无此用户'
-          })
-        }
-        connection.release()
+router.post('/add', async (req, res, next) => {
+  const body = req.body;
+  console.log("🚀 ~ router.post ~ body:", body)
+  try {
+    const body = req.body;
+    // 是否有该用户
+    const hasAccount = await hasUserAccount(body.account)
+    console.log("🚀 ~ router.post ~ req.auth:", req.auth)
+    console.log("🚀 ~ router.post ~ req.user:", req.user)
+    if(hasAccount) {
 
-        if(err) throw err;
-      }
-    )
-  })
-
+      res.json({
+        code: 0,
+        msg: 'success',
+      })
+    } else {
+      responseError(res, '无此用户')
+    }
+    
+  }
+  catch(err) {
+    responseError(res, err || '无此用户')
+  }
 })
 
 module.exports = router;

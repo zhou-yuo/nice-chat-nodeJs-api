@@ -8,7 +8,7 @@ var { expressjwt } = require("express-jwt");
 var jsonwebtoken = require('jsonwebtoken');
 
 var indexRouter = require('./routes/index');
-var userRouter = require('./routes/user');
+var userRouter = require('./routes/user/');
 var loginRouter = require('./routes/login');
 const registRouter = require('./routes/regist')
 
