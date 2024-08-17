@@ -15,7 +15,7 @@ const { hasUserAccount }  = require('./common_query/user')
 const responseError = (res, message) => {
   res.json({
     code: -1,
-    message
+    message: String(message)
   })
 }
 
@@ -44,7 +44,7 @@ router.post('/', async (req, res, next) => {
       const inviteCode = nanoid(10); // 邀请码
       // 建立连接 增加一个用户信息
       connection.query(
-        userSql.insert, 
+        userSql.insertUser, 
         [body.account, nickname, defaultAvatar, body.password, inviteCode],
         function(err_, result_) {
           if(result_) {
@@ -71,7 +71,7 @@ router.post('/', async (req, res, next) => {
 
   }
   catch(err) {
-    return responseError(res, err || '注册失败')
+    return responseError(res, (err || '注册失败'))
   }
 
 })

@@ -15,7 +15,7 @@ const pool = mysql.createPool(dbConfig.mysql);
 const responseError = (res, message) => {
   res.json({
     code: -1,
-    message
+    message: String(message)
   })
 }
 
@@ -33,7 +33,7 @@ router.post('/', function(req, res, next) {
   pool.getConnection(function(error, connection) {
     if(error) throw error
     connection.query(
-      userSql.getUserByAccount,
+      userSql.queryUserByAccount,
       [body.account],
       function(err, result) {
         if(result && result.length) {

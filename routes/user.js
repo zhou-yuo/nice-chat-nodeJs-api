@@ -7,18 +7,27 @@ const userSql = require('../db/user_sql');
 
 const pool = mysql.createPool(dbConfig.mysql);
 
-const { GetUserInfoTypes, getUserInfo, hasUserAccount }  = require('./common_query/user')
+const { GetUserInfoTypes, getUserInfo, queryIsFriend, addFriend, getContactIds }  = require('./common_query/user')
+
+const responseCb = (res, code = 0, msg, data) => {
+  res.json({
+    code,
+    message: String(msg),
+    data
+  })
+}
+// 响应一个 success
+const responseSuccess = (res, data, msg = 'success') => {
+  responseCb(res, 0, msg, data)
+}
 
 // 响应一个 error
-const responseError = (res, message) => {
-  res.json({
-    code: -1,
-    message
-  })
+const responseError = (res, msg) => {
+  responseCb(res, -1, msg)
 }
 
 /* GET user */
-router.get('/:id', async (req, res, next) => {
+router.get('/detail/:id', async (req, res, next) => {
   try {
     const params = req.params;
     const result = await getUserInfo(params.id, GetUserInfoTypes.ID)
@@ -26,73 +35,57 @@ router.get('/:id', async (req, res, next) => {
       ...result
     }
     delete userInfo.password;
-    res.json({
-      code: 0,
-      msg: 'success',
-      data: userInfo
-    })
+    responseSuccess(res, userInfo)
   }
   catch(err) {
-    responseError(res, err || '错误')
+    responseError(res, (err || '错误'))
   }
 });
-
-/**
- * 添加好友
- * @param {*} userId 
- * @param {*} targetUserId 
- * @returns 
- */
-const addFriend = (userId, targetUserId) => {
-  if(!userId || !targetUserId) {
-    return Promise.reject(`userId 或 targetUserId 不能为空`)
-  };
-  return new Promise((resolve, reject) => {
-    pool.getConnection((error, connection) => {
-      if(error) {
-        connection.release()
-        reject(error)
-        throw error
-      };
-      
-      connection.query(
-        userSql.hasUserByAccount,
-        [account],
-        (err, result) => {
-          resolve(!!(result && result.length))
-          connection.release()
-          if(err) throw err;
-        }
-      )
-    })
-  })
-}
 
 /**
  * user add friend by account
  */
 router.post('/add', async (req, res, next) => {
-  const body = req.body;
-  console.log("🚀 ~ router.post ~ body:", body)
   try {
     const body = req.body;
-    // 是否有该用户
-    const hasAccount = await hasUserAccount(body.account)
-    console.log("🚀 ~ router.post ~ req.auth:", req.auth)
-    console.log("🚀 ~ router.post ~ req.user:", req.user)
-    if(hasAccount) {
+    // 用户信息 
+    const userinfo = await getUserInfo(body.account, GetUserInfoTypes.ACCOUNT)
 
-      res.json({
-        code: 0,
-        msg: 'success',
-      })
+    if(userinfo && userinfo.id) {
+      // 排序，小的在前
+      let ids = [userinfo.id, req.auth.id].sort((a,b) => a-b);
+      // 判断是否为好友
+      const isFriendResult = await queryIsFriend(ids)
+      if(isFriendResult) {
+        responseError(res, '已是好友，无需添加')
+      } else {
+        await addFriend(ids)
+        responseSuccess(res, {}, '添加成功')
+      }
     } else {
+      // 无此用户
       responseError(res, '无此用户')
     }
-    
   }
   catch(err) {
-    responseError(res, err || '无此用户')
+    console.log("🚀 ~ router.post ~ err:", err)
+    responseError(res, (err || '错误'))
+  }
+})
+
+/**
+ * user contact list
+ */
+router.get('/contact', async (req, res, next) => {
+  try {
+    const auth = req.auth;
+    console.log("🚀 ~ router.get ~ auth:", auth)
+    const contactIds = await getContactIds(auth.id)
+    console.log("🚀 ~ router.get ~ getContactIds:", contactIds)
+    responseSuccess(res, contactIds)
+  }
+  catch(err) {
+    responseError(res, (err || '错误'))
   }
 })
 

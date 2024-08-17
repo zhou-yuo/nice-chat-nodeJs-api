@@ -31,10 +31,10 @@ const getUserInfo = (val, type = '') => {
       let sql = '';
       switch(type) {
         case GetUserInfoTypes.ID:
-          sql = userSql.getUserById;
+          sql = userSql.queryUserById;
           break;
         case GetUserInfoTypes.ACCOUNT:
-          sql = userSql.getUserByAccount;
+          sql = userSql.queryUserByAccount;
           break;
       }
       connection.query(
@@ -72,7 +72,7 @@ const hasUserAccount = (account) => {
       };
       
       connection.query(
-        userSql.hasUserByAccount,
+        userSql.queryHasUserByAccount,
         [account],
         (err, result) => {
           resolve(!!(result && result.length))
@@ -85,11 +85,12 @@ const hasUserAccount = (account) => {
 }
 
 /**
- * 查询用户是否为好哦呦
- * @param {*} account 查询值 account
+ * 查询用户是否为好友
+ * @param {*} userId 
+ * @param {*} targetUserId 
  * @returns 
  */
-const isFriend = (userId, targetUserId) => {
+const queryIsFriend = ([userId, targetUserId]) => {
   if(!userId || !targetUserId) {
     return Promise.reject(`userId 或 targetUserId 不能为空`)
   };
@@ -102,10 +103,71 @@ const isFriend = (userId, targetUserId) => {
       };
       
       connection.query(
-        userSql.hasUserByAccount,
-        [account],
+        userSql.queryIsFriend,
+        [userId, targetUserId],
         (err, result) => {
           resolve(!!(result && result.length))
+          connection.release()
+          if(err) throw err;
+        }
+      )
+    })
+  })
+}
+
+/**
+ * 
+ * @param {*} userId 
+ * @param {*} targetUserId 
+ */
+const addFriend = ([userId, targetUserId]) => {
+  if(!userId || !targetUserId) {
+    return Promise.reject(`userId 或 targetUserId 不能为空`)
+  };
+  return new Promise((resolve, reject) => {
+    pool.getConnection((error, connection) => {
+      if(error) {
+        connection.release()
+        reject(error)
+        throw error
+      };
+      
+      connection.query(
+        userSql.insertAddFriend,
+        [userId, targetUserId],
+        (err, result) => {
+          resolve(result)
+          connection.release()
+          if(err) throw err;
+        }
+      )
+    })
+  })
+}
+
+/**
+ * 联系人 ids
+ * @param {*} userId 
+ * @returns 
+ */
+const getContactIds = (userId) => {
+  if(!userId) {
+    return Promise.reject(`userId 不能为空`)
+  };
+  return new Promise((resolve, reject) => {
+    pool.getConnection((error, connection) => {
+      if(error) {
+        console.log("🚀 ~ pool.getConnection ~ error:", error)
+        connection.release()
+        reject(error)
+        throw error
+      };
+      
+      connection.query(
+        userSql.queryFriendAll,
+        [userId, userId],
+        (err, result) => {
+          resolve(result)
           connection.release()
           if(err) throw err;
         }
@@ -117,5 +179,8 @@ const isFriend = (userId, targetUserId) => {
 module.exports = {
   GetUserInfoTypes,
   getUserInfo,
-  hasUserAccount
+  hasUserAccount,
+  queryIsFriend,
+  addFriend,
+  getContactIds
 }
