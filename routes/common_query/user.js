@@ -176,11 +176,38 @@ const getContactIds = (userId) => {
   })
 }
 
+const getUserListByIds = (userIds) => {
+  console.log("🚀 ~ getUserListByIds ~ userIds:", userIds)
+  if(!userIds) {
+    return Promise.reject(`userIds 不能为空`)
+  };
+  return new Promise((resolve, reject) => {
+    pool.getConnection((error, connection) => {
+      if(error) {
+        connection.release()
+        reject(error)
+        throw error
+      };
+      
+      connection.query(
+        userSql.queryUserByIds,
+        [userIds],
+        (err, result) => {
+          resolve(result)
+          connection.release()
+          if(err) throw err;
+        }
+      )
+    })
+  })
+}
+
 module.exports = {
   GetUserInfoTypes,
   getUserInfo,
   hasUserAccount,
   queryIsFriend,
   addFriend,
-  getContactIds
+  getContactIds,
+  getUserListByIds
 }

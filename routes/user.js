@@ -7,7 +7,14 @@ const userSql = require('../db/user_sql');
 
 const pool = mysql.createPool(dbConfig.mysql);
 
-const { GetUserInfoTypes, getUserInfo, queryIsFriend, addFriend, getContactIds }  = require('./common_query/user')
+const { 
+  GetUserInfoTypes, 
+  getUserInfo, 
+  queryIsFriend, 
+  addFriend, 
+  getContactIds,
+  getUserListByIds
+}  = require('./common_query/user')
 
 const responseCb = (res, code = 0, msg, data) => {
   res.json({
@@ -79,10 +86,10 @@ router.post('/add', async (req, res, next) => {
 router.get('/contact', async (req, res, next) => {
   try {
     const auth = req.auth;
-    console.log("🚀 ~ router.get ~ auth:", auth)
     const contactIds = await getContactIds(auth.id)
-    console.log("🚀 ~ router.get ~ getContactIds:", contactIds)
-    responseSuccess(res, contactIds)
+    const ids = contactIds.map(item => item.target_user_id)
+    const list = await getUserListByIds(ids)
+    responseSuccess(res, list)
   }
   catch(err) {
     responseError(res, (err || '错误'))
