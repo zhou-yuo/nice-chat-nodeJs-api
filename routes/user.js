@@ -19,28 +19,89 @@ const responseJSON = function (res, ret) {
   }
 };
 
-/* GET user listing. */
-router.get('/:id', function(req, res, next) {
-  const params = req.params
-  console.log("🚀 ~ router.get ~ params:", params)
-  pool.getConnection((error, connection) => {
-    if(error) throw error
-    connection.query(
-      userSql.getUserById,
-      [params.id],
-      (err, result) => {
-        if(result && result.length) {
-          console.log("🚀 ~ pool.getConnection ~ result:", result)
-          const userInfo = {
-            id: result[0].id,
-            account: result[0].account,
-            nickname: result[0].nickname,
-            avatar: result[0].avatar,
+const GetUserInfoTypes = {
+  ID: "ID",
+  ACCOUNT: "ACCOUNT"
+}
+const getUserInfo = (val, type = '') => {
+  if(!val || !type) {
+    return Promise.reject({ message: `val 和 type 不能为空` })
+  };
+  return new Promise((resolve, reject) => {
+    pool.getConnection((error, connection) => {
+      if(error) {
+        reject(error)
+        throw error
+      };
+      let sql = '';
+      switch(type) {
+        case GetUserInfoTypes.ID:
+          sql = userSql.getUserById;
+          break;
+        case GetUserInfoTypes.ACCOUNT:
+          sql = userSql.getUserByAccount;
+          break;
+      }
+      connection.query(
+        sql,
+        [val],
+        (err, result) => {
+          if(result && result.length) {
+            resolve(result[0])
+          } else {
+            reject('无此用户')
           }
+          connection.release()
+          if(err) throw err;
+        }
+      )
+    })
+  })
+}
+
+
+/* GET user */
+router.get('/:id', async (req, res, next) => {
+  try {
+    const params = req.params;
+    const result = await getUserInfo(params.id, GetUserInfoTypes.ID)
+    const userInfo = {
+      ...result
+    }
+    delete userInfo.password;
+    responseJSON(res, {
+      code: 0,
+      msg: 'success',
+      data: userInfo
+    })
+  }
+  catch(err) {
+    responseJSON(res, {
+      code: -1,
+      message: err
+    })
+  }
+  
+});
+
+
+/**
+ * user add friend by account
+ */
+router.post('/add/:account', async (req, res, next) => {
+  const params = req.params;
+  console.log("🚀 ~ router.post ~ params:", params)
+  pool.getConnection((error, connection) => {
+    if(error) throw error;
+    connection.query(
+      userSql.getUserByAccount,
+      [params.account],
+      (err, result) => {
+        if(result) {
+          console.log("🚀 ~ pool.getConnection ~ result:", result)
           responseJSON(res, {
             code: 0,
-            msg: 'success',
-            data: userInfo
+            msg: 'success'
           })
         } else {
           responseJSON(res, {
@@ -49,11 +110,12 @@ router.get('/:id', function(req, res, next) {
           })
         }
         connection.release()
+
         if(err) throw err;
       }
     )
   })
- 
-});
+
+})
 
 module.exports = router;
