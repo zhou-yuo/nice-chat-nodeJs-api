@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 
 const config = require('../config/config');
 const { log } = require('debug/src/browser');
+const { decrypt, md5 } = require('../utils/encrypt')
 
 const mysql = require('mysql');
 const dbConfig = require('../db/db_config');
@@ -37,7 +38,9 @@ router.post('/', function(req, res, next) {
       [body.account],
       function(err, result) {
         if(result && result.length) {
-          if(result[0].password === body.password) {
+          const retPwd = result[0].password;
+          const bodyPwd = md5(decrypt(body.password)) 
+          if(retPwd === bodyPwd) {
             const userInfo = {
               id: result[0].id,
               account: result[0].account,

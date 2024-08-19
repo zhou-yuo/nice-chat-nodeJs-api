@@ -12,13 +12,18 @@ const pool = mysql.createPool(dbConfig.mysql);
 
 const { hasUserAccount }  = require('./common_query/user')
 
+// 响应
+const responseCb = (res, code = 0, msg, data) => {
+  res.json({
+    code,
+    message: String(msg),
+    data
+  })
+}
 
 // 响应一个 error
-const responseError = (res, message) => {
-  res.json({
-    code: -1,
-    message: String(message)
-  })
+const responseError = (res, msg) => {
+  responseCb(res, -1, msg)
 }
 
 // 默认头像

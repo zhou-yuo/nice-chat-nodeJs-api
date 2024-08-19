@@ -10,12 +10,14 @@ const pool = mysql.createPool(dbConfig.mysql);
 const { 
   GetUserInfoTypes, 
   getUserInfo, 
+  getUserList,
   queryIsFriend, 
   addFriend, 
   getContactIds,
   getUserListByIds
 } = require('./common_query/user')
 
+// 响应
 const responseCb = (res, code = 0, msg, data) => {
   res.json({
     code,
@@ -33,16 +35,38 @@ const responseError = (res, msg) => {
   responseCb(res, -1, msg)
 }
 
-/* GET user */
-router.get('/detail/:id', async (req, res, next) => {
+/* GET user detail */
+router.get('/detail', async (req, res, next) => {
   try {
-    const params = req.params;
-    const result = await getUserInfo(params.id, GetUserInfoTypes.ID)
+    const query = req.query;
+    const result = await getUserInfo(query.id, GetUserInfoTypes.ID)
     const userInfo = {
       ...result
     }
     delete userInfo.password;
     responseSuccess(res, userInfo)
+  }
+  catch(err) {
+    responseError(res, (err || '错误'))
+  }
+});
+
+/* GET user list */
+router.get('/list', async (req, res, next) => {
+  try {
+    const query = req.query;
+    console.log("🚀 ~ router.get ~ query:", query)
+    const result = await getUserList(query)
+    console.log("🚀 ~ router.get /list' ~ result:", result)
+    const list = []
+    for(let item of result) {
+      let newItem = {
+        ...item
+      }
+      delete newItem.password
+      list.push(newItem)
+    }
+    responseSuccess(res, list)
   }
   catch(err) {
     responseError(res, (err || '错误'))

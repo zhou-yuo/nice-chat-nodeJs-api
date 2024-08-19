@@ -2,7 +2,7 @@ const userSql = {
   // 添加用户
   insertUser: 'INSERT INTO user(account, nickname, avatar, password, invite_code) VALUES(?, ?, ?, ?, ?)',
   // 查询用户列表
-  queryUserAll: 'SELECT * FROM user',
+  queryUserAll: 'SELECT * FROM user WHERE id = ? or account = ?',
   // 按 ids 查询用户列表
   queryUserByIds: 'SELECT * FROM user WHERE id IN(?)',
   // 查询用户 id

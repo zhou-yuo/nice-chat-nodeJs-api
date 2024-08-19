@@ -54,6 +54,34 @@ const getUserInfo = (val, type = '') => {
   })
 }
 
+
+/**
+ * 用户列表
+ * @param {*} userId 
+ * @param {*} targetUserId 
+ */
+const getUserList = ({id = '', account = ''}) => {
+  return new Promise((resolve, reject) => {
+    pool.getConnection((error, connection) => {
+      if(error) {
+        connection.release()
+        reject(error)
+        throw error
+      };
+      
+      connection.query(
+        userSql.queryUserAll,
+        [id, account],
+        (err, result) => {
+          resolve(result)
+          connection.release()
+          if(err) throw err;
+        }
+      )
+    })
+  })
+}
+
 /**
  * 查询用户是否存在
  * @param {*} account 查询值 account
@@ -146,7 +174,7 @@ const addFriend = ([userId, targetUserId]) => {
 }
 
 /**
- * 联系人 ids
+ * 查询联系人 ids
  * @param {*} userId 
  * @returns 
  */
@@ -205,6 +233,7 @@ const getUserListByIds = (userIds) => {
 module.exports = {
   GetUserInfoTypes,
   getUserInfo,
+  getUserList,
   hasUserAccount,
   queryIsFriend,
   addFriend,
