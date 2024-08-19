@@ -39,7 +39,11 @@ const responseError = (res, msg) => {
 router.get('/detail', async (req, res, next) => {
   try {
     const query = req.query;
-    const result = await getUserInfo(query.id, GetUserInfoTypes.ID)
+    let id = query.id;
+    if(!id) {
+      id = req.auth.id
+    }
+    const result = await getUserInfo(id, GetUserInfoTypes.ID)
     const userInfo = {
       ...result
     }
