@@ -14,7 +14,7 @@ const {
   addFriend, 
   getContactIds,
   getUserListByIds
-}  = require('./common_query/user')
+} = require('./common_query/user')
 
 const responseCb = (res, code = 0, msg, data) => {
   res.json({
@@ -88,7 +88,14 @@ router.get('/contact', async (req, res, next) => {
     const auth = req.auth;
     const contactIds = await getContactIds(auth.id)
     const ids = contactIds.map(item => item.target_user_id)
-    const list = await getUserListByIds(ids)
+    const userList = await getUserListByIds(ids)
+    const list = userList.map((item) => {
+      let newItem = {
+        ...item
+      }
+      delete newItem.password
+      return newItem
+    })
     responseSuccess(res, list)
   }
   catch(err) {

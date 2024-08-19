@@ -2,6 +2,7 @@ const { log } = require('debug/src/browser')
 const express = require('express');
 const router = express.Router();
 const { nanoid } = require('nanoid')
+const { decrypt, md5 } = require('../utils/encrypt')
 
 const mysql = require('mysql');
 const dbConfig = require('../db/db_config');
@@ -10,6 +11,7 @@ const userSql = require('../db/user_sql');
 const pool = mysql.createPool(dbConfig.mysql);
 
 const { hasUserAccount }  = require('./common_query/user')
+
 
 // 响应一个 error
 const responseError = (res, message) => {
@@ -32,6 +34,10 @@ router.post('/', async (req, res, next) => {
     if(!body.password) {
       return responseError(res, '请输入密码')
     };
+    const password = decrypt(body.password)
+    if(password.length < 6 || password.length > 16) {
+      return responseError(res, '请输入6-16位密码')
+    };
     const hasAccount = await hasUserAccount(body.account)
     if(hasAccount) {
       return responseError(res, '账号已存在')
@@ -40,12 +46,12 @@ router.post('/', async (req, res, next) => {
     // 从连接池获取连接
     pool.getConnection(function(error, connection) {
       if (error) throw error;
-      const nickname = body.nickname || '新用户'
+      const nickname = body.nickname || body.account;
       const inviteCode = nanoid(10); // 邀请码
       // 建立连接 增加一个用户信息
       connection.query(
         userSql.insertUser, 
-        [body.account, nickname, defaultAvatar, body.password, inviteCode],
+        [body.account, nickname, defaultAvatar, md5(password), inviteCode],
         function(err_, result_) {
           if(result_) {
             console.log("🚀 ~ connection.query ~ result_:", result_)
