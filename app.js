@@ -55,7 +55,6 @@ app.use(expressjwt({
 //在进入路由中间件匹配之前可以拦截请求判断token是否失效(注意这部分代码必须放在所有请求的前面)
 app.use(function (req, res, next) {
   let token = req.headers?.authorization
-  console.log('request token -> ', token);
   //通过请求头是否携带token来区分需要token鉴权和不需要token的请求
   if (token) {
     jsonwebtoken.verify(token.split(' ')[1], config.jwt_secret, { algorithms: config.jwt_algorithms }, (err, decoded) => {
