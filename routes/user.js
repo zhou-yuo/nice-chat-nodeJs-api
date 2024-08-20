@@ -39,13 +39,27 @@ const responseError = (res, msg) => {
 router.get('/detail', async (req, res, next) => {
   try {
     const query = req.query;
-    let id = query.id;
-    if(!id) {
-      id = req.auth.id
-    }
+    let id = query.id, authId = req.auth.id;
+    console.log("🚀 ~ router.get ~ id- authId:", id, authId)
+    let isFriendResult = false; // 是否为好友
+    let isSelf = true; // 是否为自己
+    if(id) {
+      // 当前ID 和 token id 不同，查询是否为好友
+      if(id != authId) {
+        // 排序，小的在前
+        const ids = [id, authId].sort((a,b) => a-b);
+        // 判断是否为好友
+        isFriendResult = await queryIsFriend(ids)
+        isSelf = false
+      }
+    } else {
+      id = authId
+    };
     const result = await getUserInfo(id, GetUserInfoTypes.ID)
     const userInfo = {
-      ...result
+      ...result,
+      is_friend: isFriendResult,
+      is_self: isSelf
     }
     delete userInfo.password;
     responseSuccess(res, userInfo)
@@ -85,10 +99,12 @@ router.post('/add', async (req, res, next) => {
     const body = req.body;
     // 用户信息 
     const userinfo = await getUserInfo(body.account, GetUserInfoTypes.ACCOUNT)
+    console.log("🚀 ~ router.post ~ userinfo:", userinfo)
 
     if(userinfo && userinfo.id) {
       // 排序，小的在前
       let ids = [userinfo.id, req.auth.id].sort((a,b) => a-b);
+      console.log("🚀 ~ router.post ~ ids:", ids)
       // 判断是否为好友
       const isFriendResult = await queryIsFriend(ids)
       if(isFriendResult) {
