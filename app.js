@@ -35,26 +35,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(expressjwt({
   secret: config.jwt_secret,  // 签名的密钥 或 PublicKey
   algorithms: config.jwt_algorithms,
-  getToken: function fromHeaderOrQuerystring(req) {
-    console.log("🚀 ~ fromHeaderOrQuerystring ~ req:", req)
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.split(" ")[0] === "Bearer"
-    ) {
-      return req.headers.authorization.split(" ")[1];
-    } else if (req.query && req.query.token) {
-      return req.query.token;
-    }
-    return null;
-  },
 }).unless({ 
-  path: ["/", "/login", "/regist", "/chat/ws/.websocket"] 
+  path: ["\/login", "\/regist", "\/chat\/ws\/.websocket"] 
 }))
 
 
 //在进入路由中间件匹配之前可以拦截请求判断token是否失效(注意这部分代码必须放在所有请求的前面)
 app.use(function (req, res, next) {
   let token = req.headers?.authorization
+  console.log("🚀 ~ token:", token)
   //通过请求头是否携带token来区分需要token鉴权和不需要token的请求
   if (token) {
     jsonwebtoken.verify(token.split(' ')[1], config.jwt_secret, { algorithms: config.jwt_algorithms }, (err, decoded) => {
