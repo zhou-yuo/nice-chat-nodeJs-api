@@ -35,8 +35,20 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(expressjwt({
   secret: config.jwt_secret,  // 签名的密钥 或 PublicKey
   algorithms: config.jwt_algorithms,
+  getToken: function fromHeaderOrQuerystring(req) {
+    console.log("🚀 ~ fromHeaderOrQuerystring ~ req:", req)
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.split(" ")[0] === "Bearer"
+    ) {
+      return req.headers.authorization.split(" ")[1];
+    } else if (req.query && req.query.token) {
+      return req.query.token;
+    }
+    return null;
+  },
 }).unless({ 
-  path: ["/login", "/regist", '/chat'] 
+  path: ["/", "/login", "/regist", "/chat/ws/.websocket"] 
 }))
 
 
@@ -71,8 +83,6 @@ app.use('/login', loginRouter);
 app.use('/regist', registRouter);
 app.use('/home', homeRouter);
 app.use('/chat', chatRouter);
-
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
