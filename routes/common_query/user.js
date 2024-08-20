@@ -174,11 +174,11 @@ const addFriend = ([userId, targetUserId]) => {
 }
 
 /**
- * 查询联系人 ids
+ * 查询联系人
  * @param {*} userId 
  * @returns 
  */
-const getContactIds = (userId) => {
+const getContactList = (userId) => {
   if(!userId) {
     return Promise.reject(`userId 不能为空`)
   };
@@ -237,6 +237,6 @@ module.exports = {
   hasUserAccount,
   queryIsFriend,
   addFriend,
-  getContactIds,
+  getContactList,
   getUserListByIds
 }

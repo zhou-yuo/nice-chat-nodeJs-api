@@ -13,7 +13,7 @@ const {
   getUserList,
   queryIsFriend, 
   addFriend, 
-  getContactIds,
+  getContactList,
   getUserListByIds
 } = require('./common_query/user')
 
@@ -130,7 +130,7 @@ router.post('/add', async (req, res, next) => {
 router.get('/contact', async (req, res, next) => {
   try {
     const auth = req.auth;
-    const contactIds = await getContactIds(auth.id)
+    const contactIds = await getContactList(auth.id)
     const ids = contactIds.map(item => item.target_user_id)
     const userList = await getUserListByIds(ids)
     const list = userList.map((item) => {
